@@ -52,7 +52,6 @@ config.env.%:
 	cp -Pa $(CURDIR)/redis2-nginx-module $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/set-misc-nginx-module $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/srcache-nginx-module $(BUILDDIR_$*)/
-	cp -Pa $(CURDIR)/nginx-sxg-module $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/lua-resty-jump-consistent-hash $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/njs $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/lua-resty-lmdb $(BUILDDIR_$*)/
@@ -127,7 +126,6 @@ config.status.nginx: config.env.nginx
 		--add-dynamic-module=./redis2-nginx-module \
 		--add-dynamic-module=./set-misc-nginx-module \
 		--add-dynamic-module=./srcache-nginx-module \
-		--add-dynamic-module=./nginx-sxg-module \
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
 		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
@@ -203,7 +201,6 @@ config.status.nginx_debug: config.env.nginx_debug
 		--add-dynamic-module=./redis2-nginx-module \
 		--add-dynamic-module=./set-misc-nginx-module \
 		--add-dynamic-module=./srcache-nginx-module \
-		--add-dynamic-module=./nginx-sxg-module \
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
 		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
