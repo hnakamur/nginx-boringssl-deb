@@ -12,20 +12,52 @@
 #include "ngx_js_fetch.h"
 
 
+static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_conf_file_path(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_error_log_path(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
 
 extern njs_module_t  njs_webcrypto_module;
 extern njs_module_t  njs_xml_module;
+extern njs_module_t  njs_zlib_module;
 
 
 static njs_external_t  ngx_js_ext_core[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("build"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_build,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("conf_file_path"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_conf_file_path,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("conf_prefix"),
+        .enumerable = 1,
         .u.property = {
             .handler = ngx_js_ext_conf_prefix,
         }
@@ -38,6 +70,15 @@ static njs_external_t  ngx_js_ext_core[] = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_ERR,
             .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("error_log_path"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_error_log_path,
         }
     },
 
@@ -75,6 +116,35 @@ static njs_external_t  ngx_js_ext_core[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("prefix"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_prefix,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("version"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_version,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("version_number"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = nginx_version,
+            .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("WARN"),
         .u.property = {
             .handler = ngx_js_ext_constant,
@@ -87,8 +157,15 @@ static njs_external_t  ngx_js_ext_core[] = {
 
 
 njs_module_t *njs_js_addon_modules[] = {
+#ifdef NJS_HAVE_OPENSSL
     &njs_webcrypto_module,
+#endif
+#ifdef NJS_HAVE_XML
     &njs_xml_module,
+#endif
+#ifdef NJS_HAVE_ZLIB
+    &njs_zlib_module,
+#endif
     NULL,
 };
 
@@ -96,6 +173,16 @@ njs_module_t *njs_js_addon_modules[] = {
 ngx_int_t
 ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs)
+{
+    njs_opaque_value_t  unused;
+
+    return ngx_js_invoke(vm, fname, log, args, nargs, &unused);
+}
+
+
+ngx_int_t
+ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+    njs_opaque_value_t *args, njs_uint_t nargs, njs_opaque_value_t *retval)
 {
     njs_int_t        ret;
     njs_str_t        name;
@@ -112,7 +199,8 @@ ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
         return NGX_ERROR;
     }
 
-    ret = njs_vm_call(vm, func, njs_value_arg(args), nargs);
+    ret = njs_vm_invoke(vm, func, njs_value_arg(args), nargs,
+                        njs_value_arg(retval));
     if (ret == NJS_ERROR) {
         ngx_js_retval(vm, NULL, &exception);
 
@@ -146,7 +234,7 @@ ngx_js_retval(njs_vm_t *vm, njs_opaque_value_t *retval, ngx_str_t *s)
         ret = njs_vm_value_string(vm, &str, njs_value_arg(retval));
 
     } else {
-        ret = njs_vm_retval_string(vm, &str);
+        ret = njs_vm_exception_string(vm, &str);
     }
 
     if (ret != NJS_OK) {
@@ -320,6 +408,31 @@ ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
+ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval,
+#ifdef NGX_BUILD
+                                   (u_char *) NGX_BUILD,
+                                   njs_strlen(NGX_BUILD)
+#else
+                                   (u_char *) "",
+                                   0
+#endif
+                                   );
+}
+
+
+njs_int_t
+ngx_js_ext_conf_file_path(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_file.data,
+                                   ngx_cycle->conf_file.len);
+}
+
+
+njs_int_t
 ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
@@ -329,8 +442,35 @@ ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
+ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->error_log.data,
+                                   ngx_cycle->error_log.len);
+}
+
+
+njs_int_t
+ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->prefix.data,
+                                   ngx_cycle->prefix.len);
+}
+
+
+njs_int_t
+ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, (u_char *) NGINX_VERSION,
+                                   njs_strlen(NGINX_VERSION));
+}
+
+
+njs_int_t
 ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t level)
+    njs_index_t level, njs_value_t *retval)
 {
     char                *p;
     ngx_int_t            lvl;
@@ -368,7 +508,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     c->log->handler = handler;
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -626,6 +766,7 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
     njs_int_t             ret;
     ngx_uint_t            i;
     njs_vm_opt_t          options;
+    njs_opaque_value_t    retval;
     ngx_js_named_path_t  *preload;
 
     njs_vm_opt_init(&options);
@@ -693,7 +834,7 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
         goto error;
     }
 
-    ret = njs_vm_start(vm);
+    ret = njs_vm_start(vm, njs_value_arg(&retval));
     if (ret != NJS_OK) {
         goto error;
     }
@@ -989,8 +1130,8 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
     rc = njs_vm_compile(conf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_value_assign(&exception, njs_vm_retval(conf->vm));
-        njs_vm_retval_string(conf->vm, &text);
+        njs_vm_exception_get(conf->vm, njs_value_arg(&exception));
+        njs_vm_value_string(conf->vm, &text, njs_value_arg(&exception));
 
         value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
                                    &file_name_key, &lvalue);
