@@ -15,7 +15,6 @@ Build-Depends: debhelper (>= 9~),
                libgeoip-dev,
                libmhash-dev,
                libmaxminddb-dev,
-               libsxg-dev,
                cmake,
                golang
 Depends: luajit,
