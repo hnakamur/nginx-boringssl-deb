@@ -56,9 +56,14 @@ config.env.%:
 	cp -Pa $(CURDIR)/lua-resty-jump-consistent-hash $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/njs $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/lua-resty-lmdb $(BUILDDIR_$*)/
+	cp -Pa $(CURDIR)/boringssl $(BUILDDIR_$*)/
 	touch $@
 
 config.status.nginx: config.env.nginx
+	mkdir $(BUILDDIR_nginx)/boringssl/build && \
+	cd $(BUILDDIR_nginx)/boringssl/build && \
+	cmake -DCMAKE_POSITION_INDEPENDENT_CODE=on .. && \
+	make -j crypto ssl && \
 	cd $(BUILDDIR_nginx) && \
 	CFLAGS="" ./configure \
 		--prefix=/etc/nginx \
@@ -103,6 +108,7 @@ config.status.nginx: config.env.nginx
 		--with-stream_realip_module \
 		--with-stream_ssl_module \
 		--with-stream_ssl_preread_module \
+		--with-http_v3_module \
 		--add-module=./ngx_devel_kit \
 		--add-dynamic-module=./lua-resty-lmdb \
 		--add-dynamic-module=./lua-nginx-module \
@@ -124,12 +130,16 @@ config.status.nginx: config.env.nginx
 		--add-dynamic-module=./nginx-sxg-module \
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
-		--with-cc-opt="$(CFLAGS)" \
-		--with-ld-opt="$(LDFLAGS)"
+		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
+		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto"
 	touch $@
 	(cd $(BUILDDIR_nginx)/lua-resty-jump-consistent-hash && make libjchash.so)
 
 config.status.nginx_debug: config.env.nginx_debug
+	mkdir $(BUILDDIR_nginx_debug)/boringssl/build && \
+	cd $(BUILDDIR_nginx_debug)/boringssl/build && \
+	cmake -DCMAKE_POSITION_INDEPENDENT_CODE=on .. && \
+	make -j crypto ssl && \
 	cd $(BUILDDIR_nginx_debug) && \
 	CFLAGS="" ./configure \
 		--prefix=/etc/nginx \
@@ -167,6 +177,7 @@ config.status.nginx_debug: config.env.nginx_debug
 		--with-http_stub_status_module \
 		--with-http_sub_module \
 		--with-http_v2_module \
+		--with-http_v3_module \
 		--with-http_xslt_module=dynamic \
 		--with-mail=dynamic \
 		--with-mail_ssl_module \
@@ -195,8 +206,8 @@ config.status.nginx_debug: config.env.nginx_debug
 		--add-dynamic-module=./nginx-sxg-module \
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
-		--with-cc-opt="$(CFLAGS)" \
-		--with-ld-opt="$(LDFLAGS)" \
+		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
+		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto"
 		--with-debug
 	touch $@
 
