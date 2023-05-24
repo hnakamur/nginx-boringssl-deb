@@ -127,7 +127,7 @@ config.status.nginx: config.env.nginx
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
 		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
-		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto"
+		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto -lssl -lcrypto"
 	touch $@
 	(cd $(BUILDDIR_nginx)/lua-resty-jump-consistent-hash && make libjchash.so)
 
@@ -201,7 +201,7 @@ config.status.nginx_debug: config.env.nginx_debug
 		--add-dynamic-module=./njs/nginx \
 		--without-pcre2 \
 		--with-cc-opt="$(CFLAGS) -I./boringssl/include" \
-		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto"
+		--with-ld-opt="$(LDFLAGS) -L./boringssl/build/ssl -L./boringssl/build/crypto -lssl -lcrypto"
 		--with-debug
 	touch $@
 
