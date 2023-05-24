@@ -61,7 +61,7 @@ config.status.nginx: config.env.nginx
 	mkdir $(BUILDDIR_nginx)/boringssl/build && \
 	cd $(BUILDDIR_nginx)/boringssl/build && \
 	cmake -DCMAKE_POSITION_INDEPENDENT_CODE=on .. && \
-	make -j crypto ssl && \
+	HOME=$(BUILDDIR_nginx) make -j crypto ssl && \
 	cd $(BUILDDIR_nginx) && \
 	CFLAGS="" ./configure \
 		--prefix=/etc/nginx \
@@ -135,7 +135,7 @@ config.status.nginx_debug: config.env.nginx_debug
 	mkdir $(BUILDDIR_nginx_debug)/boringssl/build && \
 	cd $(BUILDDIR_nginx_debug)/boringssl/build && \
 	cmake -DCMAKE_POSITION_INDEPENDENT_CODE=on .. && \
-	make -j crypto ssl && \
+	HOME=$(BUILDDIR_nginx_debug) make -j crypto ssl && \
 	cd $(BUILDDIR_nginx_debug) && \
 	CFLAGS="" ./configure \
 		--prefix=/etc/nginx \
