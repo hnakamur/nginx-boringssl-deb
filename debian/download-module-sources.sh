@@ -83,3 +83,4 @@ download_github_repo -b master ruoshan/lua-resty-jump-consistent-hash
 download_github_repo -b master nginx/njs
 
 download_github_repo -b master google/boringssl
+(cd boringssl/crypto/err; go run err_data_generate.go > ../err_data.c)
