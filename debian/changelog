@@ -1,3 +1,12 @@
+nginx (1.25.0+mod.2-1ppa1~ubuntu18.04) bionic; urgency=medium
+
+  * Generate boringssl/crypto/err_data.c
+  * Remove ca-certificates from Build-Depends
+  * Generate boring/ssl/crypto/err_data.c in debian/download-module-sources.sh
+  * Add debian/patches/boringssl_crypto_disable_generate_err_data_c.patch
+
+ -- Hiroaki Nakamura <hnakamur@gmail.com>  Thu, 25 May 2023 10:13:26 +0900
+
 nginx (1.25.0+mod.1-1ppa1~ubuntu18.04) bionic; urgency=medium
 
   * New upstream version 1.25.0
