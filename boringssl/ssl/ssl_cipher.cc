@@ -1370,10 +1370,6 @@ uint16_t SSL_CIPHER_get_protocol_id(const SSL_CIPHER *cipher) {
   return static_cast<uint16_t>(cipher->id);
 }
 
-uint16_t SSL_CIPHER_get_value(const SSL_CIPHER *cipher) {
-  return SSL_CIPHER_get_protocol_id(cipher);
-}
-
 int SSL_CIPHER_is_aead(const SSL_CIPHER *cipher) {
   return (cipher->algorithm_mac & SSL_AEAD) != 0;
 }
@@ -1440,17 +1436,25 @@ int SSL_CIPHER_get_auth_nid(const SSL_CIPHER *cipher) {
   return NID_undef;
 }
 
-int SSL_CIPHER_get_prf_nid(const SSL_CIPHER *cipher) {
+const EVP_MD *SSL_CIPHER_get_handshake_digest(const SSL_CIPHER *cipher) {
   switch (cipher->algorithm_prf) {
     case SSL_HANDSHAKE_MAC_DEFAULT:
-      return NID_md5_sha1;
+      return EVP_md5_sha1();
     case SSL_HANDSHAKE_MAC_SHA256:
-      return NID_sha256;
+      return EVP_sha256();
     case SSL_HANDSHAKE_MAC_SHA384:
-      return NID_sha384;
+      return EVP_sha384();
   }
   assert(0);
-  return NID_undef;
+  return NULL;
+}
+
+int SSL_CIPHER_get_prf_nid(const SSL_CIPHER *cipher) {
+  const EVP_MD *md = SSL_CIPHER_get_handshake_digest(cipher);
+  if (md == NULL) {
+    return NID_undef;
+  }
+  return EVP_MD_nid(md);
 }
 
 int SSL_CIPHER_is_block_cipher(const SSL_CIPHER *cipher) {
