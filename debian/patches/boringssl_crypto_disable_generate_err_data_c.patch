@@ -1,8 +1,6 @@
-diff --git a/boringssl/crypto/CMakeLists.txt b/boringssl/crypto/CMakeLists.txt
-index ef47623c..0f412c41 100644
 --- a/boringssl/crypto/CMakeLists.txt
 +++ b/boringssl/crypto/CMakeLists.txt
-@@ -30,37 +30,6 @@ perlasm(CRYPTO_SOURCES x86_64 cipher_extra/aes128gcmsiv-x86_64 cipher_extra/asm/
+@@ -32,37 +32,6 @@
  perlasm(CRYPTO_SOURCES x86_64 cipher_extra/chacha20_poly1305_x86_64 cipher_extra/asm/chacha20_poly1305_x86_64.pl)
  perlasm(CRYPTO_SOURCES x86_64 test/trampoline-x86_64 test/asm/trampoline-x86_64.pl)
  
